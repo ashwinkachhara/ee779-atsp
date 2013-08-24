@@ -1,0 +1,527 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>EE779: Assignment 1</title><meta name="generator" content="MATLAB 7.12"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-08-20"><meta name="DC.source" content="s00.m"><style type="text/css">
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head><body><div class="content"><h1>EE779: Assignment 1</h1><!--introduction--><p>Ashwin Kachhara, 10d070048</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#2">Periodogram</a></li><li><a href="#13">Bartlett's Method</a></li><li><a href="#17">Welch's Method</a></li><li><a href="#20">Blackman-Tukey Method</a></li><li><a href="#24">Conclusions</a></li></ul></div><p>Reading the signal from DAT file</p><pre class="codeinput">S = getdata(<span class="string">'assgn1_data/S00.DAT'</span>);
+</pre><h2>Periodogram<a name="2"></a></h2><p>N = 16</p><pre class="codeinput">N = 16;
+y = zeros(256,1);
+y(1:N) = S(1:N);
+temp = abs(fft(y)).^2;
+per16 = temp/N;
+</pre><p>N = 32</p><pre class="codeinput">N = 32;
+y = zeros(256,1);
+y(1:N) = S(1:N);
+temp = abs(fft(y)).^2;
+per32 = temp/N;
+</pre><p>N = 128</p><pre class="codeinput">N = 128;
+y = zeros(256,1);
+y(1:N) = S(1:N);
+temp = abs(fft(y)).^2;
+per128 = temp/N;
+</pre><p>N = 512</p><pre class="codeinput">N = 512;
+temp = abs(fft(S, N)).^2;
+per512 = temp/N;
+</pre><p>Plotting</p><pre class="codeinput">figure(1)
+subplot(2,2,1);
+plot(per16);
+xlabel(<span class="string">'w'</span>);
+ylabel(<span class="string">'N=16 Periodogram'</span>);
+subplot(2,2,2);
+plot(per32);
+xlabel(<span class="string">'w'</span>);
+ylabel(<span class="string">'N=32 Periodogram'</span>);
+subplot(2,2,3);
+plot(per128);
+xlabel(<span class="string">'w'</span>);
+ylabel(<span class="string">'N=128 Periodogram'</span>);
+subplot(2,2,4);
+plot(per512);
+xlabel(<span class="string">'w'</span>);
+ylabel(<span class="string">'N=512 Periodogram'</span>);
+</pre><img vspace="5" hspace="5" src="s00_01.png" alt=""> <h2>Bartlett's Method<a name="13"></a></h2><p>Periodogram Averaging using various subsequence lengths from 16 to 128</p><pre class="codeinput">L = 16;
+K = 32;
+sum = zeros(1, 256);
+<span class="keyword">for</span> i=1:K
+    lower = 1+(i-1)*L;
+    upper = (i)*L;
+    sum = sum + (abs(fft(S(lower:upper), 256)).^2);
+<span class="keyword">end</span>
+bart16 = sum/(K*L);
+
+L = 32;
+K = 16;
+sum = zeros(1, 256);
+<span class="keyword">for</span> i=1:K
+    lower = 1+(i-1)*L;
+    upper = (i)*L;
+    sum = sum + (abs(fft(S(lower:upper), 256)).^2);
+<span class="keyword">end</span>
+bart32 = sum/(K*L);
+
+L = 128;
+K = 4;
+sum = zeros(1, 256);
+<span class="keyword">for</span> i=1:K
+    lower = 1+(i-1)*L;
+    upper = (i)*L;
+    sum = sum + (abs(fft(S(lower:upper), 256)).^2);
+<span class="keyword">end</span>
+bart128 = sum/(K*L);
+</pre><p>Plotting</p><pre class="codeinput">figure(2);
+subplot(3,1,1);
+plot(bart16);
+xlabel(<span class="string">'w'</span>);
+ylabel(<span class="string">'Bartlett Spectral Estimate(L=16)'</span>);
+
+subplot(3,1,2);
+plot(bart32);
+xlabel(<span class="string">'w'</span>);
+ylabel(<span class="string">'Bartlett Spectral Estimate(L=32)'</span>);
+
+subplot(3,1,3);
+plot(bart128);
+xlabel(<span class="string">'w'</span>);
+ylabel(<span class="string">'Bartlett Spectral Estimate(L=128)'</span>);
+</pre><img vspace="5" hspace="5" src="s00_02.png" alt=""> <h2>Welch's Method<a name="17"></a></h2><p>Similar to Bartlett's method but using overlapping subsequences with overlap=L/2 where L may be 16, 32 or 128</p><pre class="codeinput">L = 16;
+D = L/2;
+K = fix((512-L)/D+1);
+w = rectwin(256);
+P = mean(w.^2);
+sum = zeros(256, 1);
+<span class="keyword">for</span> i=1:K
+    sum = sum +abs(fft(S((1+(i-1)*D):(L+(i-1)*D)), 256)'.*w).^2;
+<span class="keyword">end</span>
+wel16 = sum/(K*L*P);
+
+L = 32;
+D = L/2;
+K = fix((512-L)/D+1);
+w = rectwin(256);
+P = mean(w.^2);
+sum = zeros(256, 1);
+<span class="keyword">for</span> i=1:K
+    sum = sum +(abs(fft(S((1+(i-1)*D):(L+(i-1)*D)), 256)'.*w).^2);
+<span class="keyword">end</span>
+wel32 = sum/(K*L*P);
+
+L = 128;
+D = L/2;
+K = fix((512-L)/D+1);
+w = rectwin(256);
+P = mean(w.^2);
+sum = zeros(256, 1);
+<span class="keyword">for</span> i=1:K
+    sum = sum +(abs(fft(S((1+(i-1)*D):(L+(i-1)*D)), 256)'.*w).^2);
+<span class="keyword">end</span>
+wel128 = sum/(K*L*P);
+
+figure(3);
+subplot(3,1,1);
+plot(wel16);
+title(<span class="string">'Welch''s Method (L=16)'</span>);
+xlabel(<span class="string">'w'</span>);
+subplot(3,1,2);
+plot(wel32);
+title(<span class="string">'Welch''s Method (L=32)'</span>);
+xlabel(<span class="string">'w'</span>);
+subplot(3,1,3);
+plot(wel128);
+title(<span class="string">'Welch''s Method (L=128)'</span>);
+xlabel(<span class="string">'w'</span>);
+</pre><img vspace="5" hspace="5" src="s00_03.png" alt=""> <h2>Blackman-Tukey Method<a name="20"></a></h2><p>Periodogram Smoothing by windowing the signal</p><p>Bartlett Window</p><pre class="codeinput">r =  xcorr(S, <span class="string">'biased'</span>);
+M=16;
+w = bartlett(256);
+rz = zeros(256,1);
+rz(1:1+M-1) = r(512:512+M-1);<span class="comment">%Zero padding</span>
+rw = rz.*w;
+blt16 = real(fft(rw));
+
+M=32;
+w = bartlett(256);
+rz = zeros(256,1);
+rz(1:1+M-1) = r(512:512+M-1);<span class="comment">%Zero padding</span>
+rw = rz.*w;
+blt32 = real(fft(rw));
+
+M=128;
+w = bartlett(256);
+rz = zeros(256,1);
+rz(1:1+M-1) = r(512:512+M-1);<span class="comment">%Zero padding</span>
+rw = rz.*w;
+blt128 = real(fft(rw));
+
+figure(4);
+subplot(3,1,1);
+plot(blt16);
+title(<span class="string">'Blackman-Tukey (M=16)'</span>);
+xlabel(<span class="string">'w'</span>);
+subplot(3,1,2);
+plot(blt32);
+title(<span class="string">'Blackman-Tukey (M=32)'</span>);
+xlabel(<span class="string">'w'</span>);
+subplot(3,1,3);
+plot(blt128);
+title(<span class="string">'Blackman-Tukey (M=128)'</span>);
+xlabel(<span class="string">'w'</span>);
+</pre><img vspace="5" hspace="5" src="s00_04.png" alt=""> <p>Rectangular Window</p><pre class="codeinput">w = rectwin(256);
+rz = zeros(256,1);
+rz(1:1+M-1) = r(512:512+M-1);<span class="comment">%Zero padding</span>
+rw = rz.*w;
+blt16 = real(fft(rw));
+
+M=32;
+w = rectwin(256);
+rz = zeros(256,1);
+rz(1:1+M-1) = r(512:512+M-1);<span class="comment">%Zero padding</span>
+rw = rz.*w;
+blt32 = real(fft(rw));
+
+M=128;
+w = rectwin(256);
+rz = zeros(256,1);
+rz(1:1+M-1) = r(512:512+M-1);<span class="comment">%Zero padding</span>
+rw = rz.*w;
+blt128 = real(fft(rw));
+
+figure(5);
+subplot(3,1,1);
+plot(blt16);
+title(<span class="string">'Blackman-Tukey (M=16)'</span>);
+xlabel(<span class="string">'w'</span>);
+subplot(3,1,2);
+plot(blt32);
+title(<span class="string">'Blackman-Tukey (M=32)'</span>);
+xlabel(<span class="string">'w'</span>);
+subplot(3,1,3);
+plot(blt128);
+title(<span class="string">'Blackman-Tukey (M=128)'</span>);
+xlabel(<span class="string">'w'</span>);
+</pre><img vspace="5" hspace="5" src="s00_05.png" alt=""> <h2>Conclusions<a name="24"></a></h2><p><i>Comparison</i></p><p>A crude estimate of resolution is the number of peaks visible. This might not be the best way as there may be false peaks. According to this hypothesis, resolution of Blackman-Tukey &gt; Welch &gt; Bartlett</p><p>Correspondingly, due to tradeoff between resolution and variance, the variance of Bartlett &lt; Welch &lt; Blackman-Tukey.</p><p>Welch and Bartlett are almost similar, of course Bartlett is just a special case of Welch's method with zero overlap.</p><p>In Blackman-Tukey, the rectangular window version has much lesser main lobe width so it may give better estimate by not masking oscillations. The triangular windowed version visibly has a much lower decay rate of side lobes</p><p>Overall, because of periodogram smoothing, Blackman-Tukey has much less variance than periodogram and the best resolution among all the methods. <b>Blackman-Tukey gives the best PSD estimate</b>.</p><p><i>Inference about the signal</i></p><p>All frequencies are part of the spectrum. There is no zero point at any frequency. This signal seems to be white noise.</p><p class="footer"><br>
+      Published with MATLAB&reg; 7.12<br></p></div><!--
+##### SOURCE BEGIN #####
+%% EE779: Assignment 1
+% Ashwin Kachhara, 10d070048
+%%
+% Reading the signal from DAT file
+S = getdata('assgn1_data/S00.DAT');
+
+%% Periodogram
+%%
+% N = 16
+%%
+N = 16;
+y = zeros(256,1);
+y(1:N) = S(1:N);
+temp = abs(fft(y)).^2;
+per16 = temp/N;
+%%
+% N = 32
+%%
+N = 32;
+y = zeros(256,1);
+y(1:N) = S(1:N);
+temp = abs(fft(y)).^2;
+per32 = temp/N;
+%%
+% N = 128
+%%
+N = 128;
+y = zeros(256,1);
+y(1:N) = S(1:N);
+temp = abs(fft(y)).^2;
+per128 = temp/N;
+%%
+% N = 512
+%%
+N = 512; 
+temp = abs(fft(S, N)).^2;
+per512 = temp/N;
+%%
+% Plotting
+
+figure(1)
+subplot(2,2,1);
+plot(per16);
+xlabel('w');
+ylabel('N=16 Periodogram');
+subplot(2,2,2);
+plot(per32);
+xlabel('w');
+ylabel('N=32 Periodogram');
+subplot(2,2,3);
+plot(per128);
+xlabel('w');
+ylabel('N=128 Periodogram');
+subplot(2,2,4);
+plot(per512);
+xlabel('w');
+ylabel('N=512 Periodogram');
+%%
+%% Bartlett's Method
+% Periodogram Averaging using various subsequence lengths from 16 to 128
+%%
+L = 16;
+K = 32;
+sum = zeros(1, 256);
+for i=1:K
+    lower = 1+(i-1)*L;
+    upper = (i)*L;
+    sum = sum + (abs(fft(S(lower:upper), 256)).^2);
+end
+bart16 = sum/(K*L);
+
+L = 32;
+K = 16;
+sum = zeros(1, 256);
+for i=1:K
+    lower = 1+(i-1)*L;
+    upper = (i)*L;
+    sum = sum + (abs(fft(S(lower:upper), 256)).^2);
+end
+bart32 = sum/(K*L);
+
+L = 128;
+K = 4;
+sum = zeros(1, 256);
+for i=1:K
+    lower = 1+(i-1)*L;
+    upper = (i)*L;
+    sum = sum + (abs(fft(S(lower:upper), 256)).^2);
+end
+bart128 = sum/(K*L);
+%%
+% Plotting
+figure(2);
+subplot(3,1,1);
+plot(bart16);
+xlabel('w');
+ylabel('Bartlett Spectral Estimate(L=16)');
+
+subplot(3,1,2);
+plot(bart32);
+xlabel('w');
+ylabel('Bartlett Spectral Estimate(L=32)');
+
+subplot(3,1,3);
+plot(bart128);
+xlabel('w');
+ylabel('Bartlett Spectral Estimate(L=128)');
+%%
+%% Welch's Method
+% Similar to Bartlett's method but using overlapping subsequences with
+% overlap=L/2 where L may be 16, 32 or 128
+%%
+L = 16;
+D = L/2;
+K = fix((512-L)/D+1);
+w = rectwin(256);
+P = mean(w.^2);
+sum = zeros(256, 1);
+for i=1:K
+    sum = sum +abs(fft(S((1+(i-1)*D):(L+(i-1)*D)), 256)'.*w).^2;
+end
+wel16 = sum/(K*L*P);
+
+L = 32;
+D = L/2;
+K = fix((512-L)/D+1);
+w = rectwin(256);
+P = mean(w.^2);
+sum = zeros(256, 1);
+for i=1:K
+    sum = sum +(abs(fft(S((1+(i-1)*D):(L+(i-1)*D)), 256)'.*w).^2);
+end
+wel32 = sum/(K*L*P);
+
+L = 128;
+D = L/2;
+K = fix((512-L)/D+1);
+w = rectwin(256);
+P = mean(w.^2);
+sum = zeros(256, 1);
+for i=1:K
+    sum = sum +(abs(fft(S((1+(i-1)*D):(L+(i-1)*D)), 256)'.*w).^2);
+end
+wel128 = sum/(K*L*P);
+
+figure(3);
+subplot(3,1,1);
+plot(wel16);
+title('Welch''s Method (L=16)');
+xlabel('w');
+subplot(3,1,2);
+plot(wel32);
+title('Welch''s Method (L=32)');
+xlabel('w');
+subplot(3,1,3);
+plot(wel128);
+title('Welch''s Method (L=128)');
+xlabel('w');
+%%
+%% Blackman-Tukey Method
+% Periodogram Smoothing by windowing the signal
+%%
+% Bartlett Window
+r =  xcorr(S, 'biased');
+M=16;
+w = bartlett(256);
+rz = zeros(256,1);
+rz(1:1+M-1) = r(512:512+M-1);%Zero padding
+rw = rz.*w;
+blt16 = real(fft(rw));
+
+M=32;
+w = bartlett(256);
+rz = zeros(256,1);
+rz(1:1+M-1) = r(512:512+M-1);%Zero padding
+rw = rz.*w;
+blt32 = real(fft(rw));
+
+M=128;
+w = bartlett(256);
+rz = zeros(256,1);
+rz(1:1+M-1) = r(512:512+M-1);%Zero padding
+rw = rz.*w;
+blt128 = real(fft(rw));
+
+figure(4);
+subplot(3,1,1);
+plot(blt16);
+title('Blackman-Tukey (M=16)');
+xlabel('w');
+subplot(3,1,2);
+plot(blt32);
+title('Blackman-Tukey (M=32)');
+xlabel('w');
+subplot(3,1,3);
+plot(blt128);
+title('Blackman-Tukey (M=128)');
+xlabel('w');
+%%
+% Rectangular Window
+w = rectwin(256);
+rz = zeros(256,1);
+rz(1:1+M-1) = r(512:512+M-1);%Zero padding
+rw = rz.*w;
+blt16 = real(fft(rw));
+
+M=32;
+w = rectwin(256);
+rz = zeros(256,1);
+rz(1:1+M-1) = r(512:512+M-1);%Zero padding
+rw = rz.*w;
+blt32 = real(fft(rw));
+
+M=128;
+w = rectwin(256);
+rz = zeros(256,1);
+rz(1:1+M-1) = r(512:512+M-1);%Zero padding
+rw = rz.*w;
+blt128 = real(fft(rw));
+
+figure(5);
+subplot(3,1,1);
+plot(blt16);
+title('Blackman-Tukey (M=16)');
+xlabel('w');
+subplot(3,1,2);
+plot(blt32);
+title('Blackman-Tukey (M=32)');
+xlabel('w');
+subplot(3,1,3);
+plot(blt128);
+title('Blackman-Tukey (M=128)');
+xlabel('w');
+%%
+%% Conclusions
+% _Comparison_
+%%
+% A crude estimate of resolution is the number of peaks visible. This
+% might not be the best way as there may be false peaks. According to this
+% hypothesis, resolution of Blackman-Tukey > Welch > Bartlett
+%%
+% Correspondingly, due to tradeoff between resolution and variance, the
+% variance of Bartlett < Welch < Blackman-Tukey.
+%%
+% Welch and Bartlett are almost similar, of course Bartlett is just a
+% special case of Welch's method with zero overlap.
+%%
+% In Blackman-Tukey, the rectangular window version has much lesser main
+% lobe width so it may give better estimate by not masking oscillations.
+% The triangular windowed version visibly has a much lower decay rate of
+% side lobes
+%%
+% Overall, because of periodogram smoothing, Blackman-Tukey has much less
+% variance than periodogram and the best resolution among all the methods.
+% *Blackman-Tukey gives the best PSD estimate*.
+%%
+% _Inference about the signal_
+%%
+% All frequencies are part of the spectrum. There is no zero point at any
+% frequency. This signal seems to be white noise.
+%%
+
+
+
+##### SOURCE END #####
+--></body></html>
