@@ -1,0 +1,11 @@
+P = eye(2);
+s1 = uladata([0, 15] ,P,100,1,10,0.5);
+
+phi1 = beamform(s1, 128, 0.5);
+plot(phi1)
+
+phi2 = capon_sp(s1, 128, 0.5);
+plot(phi2);
+
+
+help root_music_doa

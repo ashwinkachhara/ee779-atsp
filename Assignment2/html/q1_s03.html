@@ -1,0 +1,309 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>EE779 Computing Assignment 2 Q1 S03</title><meta name="generator" content="MATLAB 7.12"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-09-23"><meta name="DC.source" content="q1_s03.m"><style type="text/css">
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head><body><div class="content"><h1>EE779 Computing Assignment 2 Q1 S03</h1><!--introduction--><p>Ashwin Kachhara, 10d070048</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#2">a) Estimation of the correlation matrix</a></li><li><a href="#7">b) Yule-Walker Method</a></li><li><a href="#13">c) Actual Error Variance</a></li><li><a href="#22">d) First order linear predictive model</a></li><li><a href="#32">e) AR Power Spectral estimate | 1st order model</a></li><li><a href="#33">f) AR Power Spectral esimate | 2nd order model</a></li><li><a href="#34">g) Power spectrum using periodogram method</a></li></ul></div><p>Reading the signal S03 from the DAT file</p><pre class="codeinput">S = getdata(<span class="string">'assgn1_data/S03.DAT'</span>);
+</pre><h2>a) Estimation of the correlation matrix<a name="2"></a></h2><pre class="codeinput">N = length(S);
+</pre><p>Because we need a 3x3 correlation matrix, the order of the AR model is 2</p><pre class="codeinput">p = 2;
+r=zeros(p+1, 1);
+<span class="keyword">for</span> i=0:p,
+    r(i+1) = S(1:N-i)*S(i+1:N)'/N;
+<span class="keyword">end</span>
+</pre><p>After calculating the autocorrelation sequence, we can simply plug these values in to obtain the 3x3 Toeplitz correlation matrix, R33</p><pre class="codeinput">R33 = [r(1) r(2) r(3); r(2) r(1) r(2); r(3) r(2) r(1)]
+</pre><pre class="codeoutput">
+R33 =
+
+   11.8045  -11.3127   10.7796
+  -11.3127   11.8045  -11.3127
+   10.7796  -11.3127   11.8045
+
+</pre><h2>b) Yule-Walker Method<a name="7"></a></h2><p>We use the matrix R33 to solve the corresponding Yule-Walker equations. We obtain the linear coefficients of the AR model and the estimated variance of the error function</p><pre class="codeinput">R331=R33(2:end, 2:end);
+a33 = zeros(p,1);
+a33 = -inv(R331)*r(2:end)
+</pre><pre class="codeoutput">
+a33 =
+
+    1.0197
+    0.0641
+
+</pre><p>We prepend a33 with unity to get a vector a331 which gives us much more computational convenience</p><pre class="codeinput">a331 = [1;a33];
+</pre><p>The predicted error variance comes out to be:</p><pre class="codeinput">var33th = a331'*r
+</pre><pre class="codeoutput">
+var33th =
+
+    0.9593
+
+</pre><h2>c) Actual Error Variance<a name="13"></a></h2><p>We will need to apply the filter to the data, and using the difference equation, we can compute the error function.</p><p>Diff eqn: <img src="q1_s03_eq10102.png" alt="$$y[n] + a_{1} \cdot y[n-1] + a_{2} \cdot y[n-2] = e[n]$"></p><pre class="codeinput">e33=zeros(N,1);
+e33(1) = S(1);
+e33(2) = S(2) + a33(1)*S(1);
+</pre><p>Now that we have set the initial conditions, we can calculate the error function</p><pre class="codeinput"><span class="keyword">for</span> i=3:N,
+    e33(i) = S(i) + a33(1)*S(i-1) + a33(2)*S(i-2);
+<span class="keyword">end</span>
+</pre><p>The computed error variance comes out to be:</p><pre class="codeinput">var33pr = var(e33)
+</pre><pre class="codeoutput">
+var33pr =
+
+    0.9538
+
+</pre><p>It compares quite well to the theoretical error variance</p><h2>d) First order linear predictive model<a name="22"></a></h2><p>First we extract a 2x2 block out of the previous matrix R33 and name it as R22. This corresponds to the YW equations of the first order model. Now we repeat the same procedure as before i.e. solving the YW equations for the model parameters and theoretical error variance and then we will calculate the actual variance for comparison to the theoretical estimate.</p><pre class="codeinput">R22 = R33(1:2, 1:2);
+</pre><p>First order AR model parameter</p><pre class="codeinput">a22 = -r(2)/R22(2,2)
+a221 = [1;a22];
+</pre><pre class="codeoutput">
+a22 =
+
+    0.9583
+
+</pre><p>Theoretical estimate of error variance</p><pre class="codeinput">var22th = a221'*r(1:2)
+</pre><pre class="codeoutput">
+var22th =
+
+    0.9632
+
+</pre><pre class="codeinput">e22=zeros(N,1);
+e22(1) = S(1);
+
+<span class="keyword">for</span> i=2:N,
+    e22(i) = S(i) + a22*S(i-1);
+<span class="keyword">end</span>
+</pre><p>Actual value of error variance (using difference equation)</p><pre class="codeinput">var22pr = var(e22)
+</pre><pre class="codeoutput">
+var22pr =
+
+    0.9584
+
+</pre><h2>e) AR Power Spectral estimate | 1st order model<a name="32"></a></h2><p>Power spectrum is estimated using the following equation <img src="q1_s03_eq03090.png" alt="$$P_x(e^{j\omega}) = \frac{\sigma^2}{1 + \sum_{k=0}^p a_{p} (k) \cdot \mathrm{e}^{-jk\omega}}$"> Where p is the order of the filter and numerator is the variance of the error function.</p><pre class="codeinput">Pspec22=zeros(512, 1);
+<span class="keyword">for</span> k=0:512,
+    w = k/512 * 2 * pi;
+    expo = [1; exp(-1i*w)];
+    Pspec22(k+1) = var22th/abs(expo'*a221);
+<span class="keyword">end</span>
+figure(1)
+plot(Pspec22)
+title(<span class="string">'S03: Power spectral estimate: AR(1)'</span>)
+xlabel(<span class="string">'n(1:512)'</span>)
+ylabel(<span class="string">'P(jw)'</span>)
+</pre><img vspace="5" hspace="5" src="q1_s03_01.png" alt=""> <h2>f) AR Power Spectral esimate | 2nd order model<a name="33"></a></h2><pre class="codeinput">Pspec33=zeros(512, 1);
+<span class="keyword">for</span> k=0:512,
+    w = k/512 * 2 * pi;
+    expo = [1; exp(-1i*w); exp(-2i*w)];
+    Pspec33(k+1) = var33th/abs(expo'*a331);
+<span class="keyword">end</span>
+figure(2)
+plot(Pspec33)
+title(<span class="string">'S03: Power spectral estimate: AR(2)'</span>)
+xlabel(<span class="string">'n(1:512)'</span>)
+ylabel(<span class="string">'P(jw)'</span>)
+</pre><img vspace="5" hspace="5" src="q1_s03_02.png" alt=""> <h2>g) Power spectrum using periodogram method<a name="34"></a></h2><p>Computing periodogram of length 512</p><pre class="codeinput">N = 512;
+temp = abs(fft(S, N)).^2;
+per512 = temp/N;
+figure(3)
+plot(per512)
+title(<span class="string">'S03: Power spectral estimate: Periodogram'</span>)
+xlabel(<span class="string">'n(1:512)'</span>)
+ylabel(<span class="string">'P(jw)'</span>)
+</pre><img vspace="5" hspace="5" src="q1_s03_03.png" alt=""> <p>Comparison of periodogram estimates</p><p>Since the signal S03 has only one peak, it can be modeled fairly accurately using a first order or second order AR filter. Both these models, give approximately the same power spectral estimate.</p><p>The periodogram estimate is similar, with only one major peaks. The other peaks are very small, are smoothed over by the AR filter. They may also be false peaks, due to the rectangular windowing in the periodogram.</p><p class="footer"><br>
+      Published with MATLAB&reg; 7.12<br></p></div><!--
+##### SOURCE BEGIN #####
+%% EE779 Computing Assignment 2 Q1 S03
+% Ashwin Kachhara, 10d070048
+%%
+% Reading the signal S03 from the DAT file
+S = getdata('assgn1_data/S03.DAT');
+
+%% a) Estimation of the correlation matrix
+N = length(S);
+%%
+% Because we need a 3x3 correlation matrix, the order of the AR model is 2
+%%
+p = 2;
+r=zeros(p+1, 1);
+for i=0:p,
+    r(i+1) = S(1:N-i)*S(i+1:N)'/N;
+end
+%%
+% After calculating the autocorrelation sequence, we can simply plug these
+% values in to obtain the 3x3 Toeplitz correlation matrix, R33
+%%
+R33 = [r(1) r(2) r(3); r(2) r(1) r(2); r(3) r(2) r(1)]
+
+%% b) Yule-Walker Method
+% We use the matrix R33 to solve the corresponding Yule-Walker equations.
+% We obtain the linear coefficients of the AR model and the estimated
+% variance of the error function
+%%
+R331=R33(2:end, 2:end);
+a33 = zeros(p,1);
+a33 = -inv(R331)*r(2:end)
+%%
+% We prepend a33 with unity to get a vector a331 which gives us much more
+% computational convenience
+%%
+a331 = [1;a33];
+%%
+% The predicted error variance comes out to be:
+%%
+var33th = a331'*r
+%% c) Actual Error Variance
+% We will need to apply the filter to the data, and using the difference
+% equation, we can compute the error function.
+%%
+% Diff eqn: $$y[n] + a_{1} \cdot y[n-1] + a_{2} \cdot y[n-2] = e[n]$
+%%
+e33=zeros(N,1);
+e33(1) = S(1);
+e33(2) = S(2) + a33(1)*S(1);
+%%
+% Now that we have set the initial conditions, we can calculate the error
+% function
+%%
+for i=3:N,
+    e33(i) = S(i) + a33(1)*S(i-1) + a33(2)*S(i-2);
+end
+%%
+% The computed error variance comes out to be:
+%%
+var33pr = var(e33)
+%%
+% It compares quite well to the theoretical error variance
+%%
+%% d) First order linear predictive model
+% First we extract a 2x2 block out of the previous matrix R33 and name it
+% as R22. This corresponds to the YW equations of the first order model.
+% Now we repeat the same procedure as before i.e. solving the YW equations
+% for the model parameters and theoretical error variance and then we will calculate
+% the actual variance for comparison to the theoretical estimate.
+%%
+R22 = R33(1:2, 1:2);
+%%
+% First order AR model parameter
+%%
+a22 = -r(2)/R22(2,2)
+a221 = [1;a22];
+%%
+% Theoretical estimate of error variance
+%%
+var22th = a221'*r(1:2)
+%%
+e22=zeros(N,1);
+e22(1) = S(1);
+
+for i=2:N,
+    e22(i) = S(i) + a22*S(i-1);
+end
+%%
+% Actual value of error variance (using difference equation)
+%%
+var22pr = var(e22)
+%%
+%% e) AR Power Spectral estimate | 1st order model
+% Power spectrum is estimated using the following equation
+% $$P_x(e^{j\omega}) = \frac{\sigma^2}{1 + \sum_{k=0}^p a_{p} (k) \cdot \mathrm{e}^{-jk\omega}}$
+% Where p is the order of the filter and numerator is the variance of the
+% error function.
+Pspec22=zeros(512, 1);
+for k=0:512,
+    w = k/512 * 2 * pi;
+    expo = [1; exp(-1i*w)];
+    Pspec22(k+1) = var22th/abs(expo'*a221);
+end
+figure(1)
+plot(Pspec22)
+title('S03: Power spectral estimate: AR(1)')
+xlabel('n(1:512)')
+ylabel('P(jw)')
+%% f) AR Power Spectral esimate | 2nd order model
+
+Pspec33=zeros(512, 1);
+for k=0:512,
+    w = k/512 * 2 * pi;
+    expo = [1; exp(-1i*w); exp(-2i*w)];
+    Pspec33(k+1) = var33th/abs(expo'*a331);
+end
+figure(2)
+plot(Pspec33)
+title('S03: Power spectral estimate: AR(2)')
+xlabel('n(1:512)')
+ylabel('P(jw)')
+%% g) Power spectrum using periodogram method
+% Computing periodogram of length 512
+%%
+N = 512; 
+temp = abs(fft(S, N)).^2;
+per512 = temp/N;
+figure(3)
+plot(per512)
+title('S03: Power spectral estimate: Periodogram')
+xlabel('n(1:512)')
+ylabel('P(jw)')
+%%
+% Comparison of periodogram estimates
+%%
+% Since the signal S03 has only one peak, it can be modeled fairly
+% accurately using a first order or second order AR filter. Both these
+% models, give approximately the same power spectral estimate.
+%%
+% The periodogram estimate is similar, with only one major peaks. The other
+% peaks are very small, are smoothed over by the AR filter. They may also
+% be false peaks, due to the rectangular windowing in the periodogram.
+##### SOURCE END #####
+--></body></html>
