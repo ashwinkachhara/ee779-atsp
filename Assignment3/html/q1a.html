@@ -1,0 +1,184 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>EE779 Computing Assignment 3 (Q1a) ()</title><meta name="generator" content="MATLAB 7.12"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-10-16"><meta name="DC.source" content="q1a.m"><style type="text/css">
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head><body><div class="content"><h1>EE779 Computing Assignment 3 (Q1a) (<img src="q1a_eq65740.png" alt="$$\theta = 15\,^{\circ}$">)</h1><!--introduction--><p>Ashwin Kachhara, 10d070048</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#3">Data, Processing</a></li><li><a href="#9">Conclusions</a></li></ul></div><p>Specifying data required: Covariance matrix P and the value of theta.</p><pre class="codeinput">P = eye(2);
+theta = 15;
+</pre><p>Preparing the empty arrays</p><pre class="codeinput">y = zeros(10, 100, 50);
+phi1 = zeros(50, 128);
+phi2 = zeros(50, 128);
+theta1 = zeros(50, 2);
+theta2 = zeros(50, 2);
+</pre><h2>Data, Processing<a name="3"></a></h2><p>Because of the noise component in generation of the ULA data, we will take fifty iterations of ULA data generation and average the final results.</p><p>In each iteration, we calculate a new ULA data set, the corresponding spectra via Beamforming, Capon's method. Also, we calculate the Direction of arrival estimates using the Root Music method as well as ESPRIT method.</p><pre class="codeinput"><span class="keyword">for</span> i=1:50,
+    y(:,:,i) = uladata([0, theta] ,P,100,1,10,0.5);
+    phi1(i,:) = beamform(y(:,:,i), 128, 0.5);
+    phi2(i,:) = capon_sp(y(:,:,i), 128, 0.5);
+    theta1(i,:) = root_music_doa(y(:,:,i), 2, 0.5);
+    theta2(i,:) = esprit_doa(y(:,:,i), 2, 0.5);
+<span class="keyword">end</span>
+</pre><p>Beamforming: We calculate the average spectrum corresponding to each set of ULA data and plot it.</p><pre class="codeinput">phi1avg(1:128) = mean(phi1(:,1:128));
+figure(1)
+plot(20*log10(phi1avg))
+ylabel(<span class="string">'dB'</span>)
+title(<span class="string">'Averaged Spatial Spectrum: Beamforming method'</span>);
+xlabel(<span class="string">'n'</span>)
+</pre><img vspace="5" hspace="5" src="q1a_01.png" alt=""> <p>Capon's method: We calculate the average spectrum corresponding to each set of ULA data and plot it.</p><pre class="codeinput">phi2avg(1:128) = mean(phi2(:,1:128));
+figure(2)
+plot(20*log10(phi2avg))
+ylabel(<span class="string">'dB'</span>)
+title(<span class="string">'Averaged Spatial Spectrum: Capon''s method'</span>);
+xlabel(<span class="string">'n'</span>)
+</pre><img vspace="5" hspace="5" src="q1a_02.png" alt=""> <p>For Root-Music, we get estimated direction of arrival. We will attempt to see the spread of estimates by plotting the estimates from each data set with the same height</p><pre class="codeinput">figure(3)
+stem(theta1(:), ones(100,1));
+title(<span class="string">'Root-Music method'</span>)
+xlabel(<span class="string">'Angle'</span>)
+</pre><img vspace="5" hspace="5" src="q1a_03.png" alt=""> <p>For ESPRIT, we get estimated direction of arrival. We will attempt to see the spread of estimates by plotting the estimates from each data set with the same height</p><pre class="codeinput">figure(4)
+stem(theta2(:), ones(100,1));
+title(<span class="string">'ESPRIT method'</span>)
+xlabel(<span class="string">'Angle'</span>)
+</pre><img vspace="5" hspace="5" src="q1a_04.png" alt=""> <h2>Conclusions<a name="9"></a></h2><p>For this value of <img src="q1a_eq25630.png" alt="$$\theta$">, each of the method gives a satisfactory result, i.e. the methods are able to resolve both the sources successfully.</p><p>The peaks in Capon's method are much sharper, leading to better estimate.</p><p>Comparing Root Music and ESPRIT, The Root Music estimates are much closer together (implying less variance). The average value is also closer to the actual value in case of Root Music</p><p>The properties of various time series estimators are rougly analogous to the temporal case, with Capon better than Beamforming, and, RootMusic better than ESPRIT</p><p class="footer"><br>
+      Published with MATLAB&reg; 7.12<br></p></div><!--
+##### SOURCE BEGIN #####
+%% EE779 Computing Assignment 3 (Q1a) ($$\theta = 15\,^{\circ}$)
+% Ashwin Kachhara, 10d070048
+%%
+% Specifying data required: Covariance matrix P and the value of theta.
+P = eye(2);
+theta = 15;
+%%
+% Preparing the empty arrays 
+y = zeros(10, 100, 50);
+phi1 = zeros(50, 128);
+phi2 = zeros(50, 128);
+theta1 = zeros(50, 2);
+theta2 = zeros(50, 2);
+%% Data, Processing
+% Because of the noise component in generation of the ULA data, we will
+% take fifty iterations of ULA data generation and average the final
+% results.
+%%
+% In each iteration, we calculate a new ULA data set, the corresponding
+% spectra via Beamforming, Capon's method. Also, we calculate the Direction
+% of arrival estimates using the Root Music method as well as ESPRIT
+% method.
+for i=1:50,
+    y(:,:,i) = uladata([0, theta] ,P,100,1,10,0.5);
+    phi1(i,:) = beamform(y(:,:,i), 128, 0.5);
+    phi2(i,:) = capon_sp(y(:,:,i), 128, 0.5);
+    theta1(i,:) = root_music_doa(y(:,:,i), 2, 0.5);
+    theta2(i,:) = esprit_doa(y(:,:,i), 2, 0.5);
+end
+%%
+% Beamforming: We calculate the average spectrum corresponding to each set
+% of ULA data and plot it. 
+phi1avg(1:128) = mean(phi1(:,1:128));
+figure(1)
+plot(20*log10(phi1avg))
+ylabel('dB')
+title('Averaged Spatial Spectrum: Beamforming method');
+xlabel('n')
+
+%%
+% Capon's method: We calculate the average spectrum corresponding to each set
+% of ULA data and plot it. 
+phi2avg(1:128) = mean(phi2(:,1:128));
+figure(2)
+plot(20*log10(phi2avg))
+ylabel('dB')
+title('Averaged Spatial Spectrum: Capon''s method');
+xlabel('n')
+
+%%
+% For Root-Music, we get estimated direction of arrival. We will attempt to
+% see the spread of estimates by plotting the estimates from each data set
+% with the same height
+figure(3)
+stem(theta1(:), ones(100,1));
+title('Root-Music method')
+xlabel('Angle')
+%%
+% For ESPRIT, we get estimated direction of arrival. We will attempt to
+% see the spread of estimates by plotting the estimates from each data set
+% with the same height
+figure(4)
+stem(theta2(:), ones(100,1));
+title('ESPRIT method')
+xlabel('Angle')
+%% Conclusions
+%%
+% For this value of $$\theta$, each of the method gives a satisfactory
+% result, i.e. the methods are able to resolve both the sources
+% successfully.
+%%
+% The peaks in Capon's method are much sharper, leading to better estimate.
+%%
+% Comparing Root Music and ESPRIT, The Root Music estimates are much closer
+% together (implying less variance). The average value is also closer to
+% the actual value in case of Root Music
+%%
+% The properties of various time series estimators are rougly analogous to
+% the temporal case, with Capon better than Beamforming, and, RootMusic better
+% than ESPRIT
+
+##### SOURCE END #####
+--></body></html>

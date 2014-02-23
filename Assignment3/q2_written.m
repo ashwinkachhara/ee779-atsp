@@ -13,7 +13,7 @@ a2 = [exp(0i*ws2); exp(-1i*ws2); exp(-2i*ws2); exp(-3i*ws2); exp(-4i*ws2); exp(-
 
 a = [a2' a1'];
 
-theta0 = 90*pi/180;
+theta0 = 45*pi/180;
 ws10 = 2*pi*dl*sin(theta0);
 ws20 = - 2*pi*dl*cos(theta0);
 
